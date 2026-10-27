@@ -1,0 +1,76 @@
+﻿import Link from "next/link";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { editarPoliza } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function EditarPolizaPage({ params }) {
+  const { id } = await params;
+
+  const resultado = await db.execute({
+    sql: "SELECT * FROM poliza WHERE id_poliza = ?",
+    args: [id],
+  });
+  const p = resultado.rows[0];
+  if (!p) notFound();
+
+  const clientesRes = await db.execute(
+    "SELECT id_cliente, apellido, nombre, dni FROM cliente ORDER BY apellido, nombre"
+  );
+  const clientes = clientesRes.rows;
+
+  return (
+    <div className="max-w-lg">
+      <h1 className="text-2xl font-bold mb-4">Editar póliza</h1>
+
+      <form action={editarPoliza} className="bg-white p-6 rounded shadow flex flex-col gap-4">
+        <input type="hidden" name="id_poliza" value={p.id_poliza} />
+
+        <label className="flex flex-col gap-1">
+          Número de póliza
+          <input name="numero_poliza" defaultValue={p.numero_poliza} required className="border rounded px-3 py-2" />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          Cliente
+          <select name="id_cliente" defaultValue={p.id_cliente} required className="border rounded px-3 py-2">
+            {clientes.map((c) => (
+              <option key={c.id_cliente} value={c.id_cliente}>
+                {c.apellido}, {c.nombre} (DNI {c.dni})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          Fecha de inicio
+          <input name="fecha_inicio" type="date" defaultValue={p.fecha_inicio} required className="border rounded px-3 py-2" />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          Fecha de vencimiento
+          <input name="fecha_fin" type="date" defaultValue={p.fecha_fin} required className="border rounded px-3 py-2" />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          Estado
+          <select name="estado" defaultValue={p.estado} className="border rounded px-3 py-2">
+            <option value="ACTIVA">ACTIVA</option>
+            <option value="VENCIDA">VENCIDA</option>
+            <option value="CANCELADA">CANCELADA</option>
+          </select>
+        </label>
+
+        <div className="flex gap-3">
+          <button className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
+            GUARDAR CAMBIOS
+          </button>
+          <Link href="/polizas" className="px-4 py-2 text-gray-700 hover:underline">
+            Cancelar
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
+}
